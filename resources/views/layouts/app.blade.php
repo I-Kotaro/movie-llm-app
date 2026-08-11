@@ -14,14 +14,17 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
-    <div class="app-container">
-        <header class="glass-header">
-            <div class="logo">仮ロゴ</div>
-        </header>
-        
-        <main class="main-content">
-            @yield('content')
-        </main>
+    <div class="film-layout">
+        <!-- 中央のチャットアプリコンテナ（これがフィルム本体になります） -->
+        <div class="app-container chat-layout">
+            <header class="glass-header">
+                <div class="logo">仮ヘッダー</div>
+            </header>
+            
+            <main class="main-content chat-content">
+                @yield('content')
+            </main>
+        </div>
     </div>
 </body>
 </html>
