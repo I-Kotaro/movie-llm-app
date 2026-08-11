@@ -1,9 +1,306 @@
-@import 'tailwindcss';
+:root {
+    /* Color Palette */
+    --color-bg-dark: #0f172a;
+    --color-bg-panel: rgba(30, 41, 59, 0.7);
+    --color-text-main: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-accent-primary: #3b82f6;
+    --color-accent-glow: rgba(59, 130, 246, 0.5);
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-display: 'Outfit', sans-serif;
+}
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-text-main);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    height: 100vh;
+    /* 全体が伸びないように固定 */
+    overflow: hidden;
+    /* 画面全体のスクロールを禁止 */
+}
+
+/* App Layout (Film Style) */
+.film-layout {
+    display: flex;
+    justify-content: center;
+    /* チャット画面のすぐ横にフィルムがくっつくようにする */
+    height: 100vh;
+    /* 全体が伸びないように固定 */
+    background-color: #0f172a;
+    /* 背景を濃い青（Dark Blue）へ */
+    overflow: hidden;
+    /* 枠外にはみ出たものを隠す */
+}
+
+/* -------------------------------------
+   Film Edges (Chat Container Borders)
+-------------------------------------- */
+.app-container::before,
+.app-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 32px;
+    /* フィルムのフチの幅 */
+    background-color: #1b1b1b;
+    /* フィルム本体の黒 */
+    /* 背景色（濃い青）の四角い穴を縦に並べる */
+    background-image: linear-gradient(to bottom, #929292 14px, transparent 14px);
+    background-position: center top;
+    background-size: 15px 40px;
+    /* 穴のサイズと間隔 */
+    background-repeat: repeat-y;
+    z-index: 100;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+    animation: holeScroll 0.3s linear infinite;
+    animation-play-state: paused;
+}
+
+.app-container::before {
+    left: 0;
+    border-right: 2px solid rgba(255, 255, 255, 0.1);
+    /* フレームの区切り線 */
+}
+
+.app-container::after {
+    right: 0;
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* AI思考中のアニメーション再生 */
+.is-loading .app-container::before,
+.is-loading .app-container::after {
+    animation-play-state: running;
+}
+
+/* フィルムの無限スクロールアニメーション */
+
+@keyframes holeScroll {
+    from {
+        background-position: center 0;
+    }
+
+    to {
+        background-position: center 120px;
+    }
+}
+
+/* Chat App Container (This is now the Film itself) */
+.app-container {
+    flex: 0 1 600px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: transparent;
+    /* 背景色を透明にして、はみ出しを防ぐ */
+    position: relative;
+    padding: 0 32px;
+    /* 左右のフィルム枠（32px）のスペースを確保 */
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+    /* フィルム全体の影 */
+}
+
+/* Header (Glassmorphism) */
+.glass-header {
+    background: var(--color-bg-panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    text-align: center;
+}
+
+.logo {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+    letter-spacing: 0.05em;
+}
+
+/* Chat Layout */
+.chat-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background-color: #7494c0;
+    /* LINE風の背景色はチャットエリアのみに適用 */
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
+}
+
+/* Chat Messages */
+.message {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    max-width: 85%;
+}
+
+.ai-message {
+    align-self: flex-start;
+}
+
+.user-message {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.message-bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    position: relative;
+    word-break: break-word;
+}
+
+.ai-message .message-bubble {
+    background: #ffffff;
+    /* 相手の吹き出しは白 */
+    color: #111111;
+    /* 文字は黒 */
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    /* 軽い影 */
+}
+
+.user-message .message-bubble {
+    background: #85e249;
+    /* 自分の吹き出しはLINEグリーン */
+    color: #111111;
+    /* 文字は黒 */
+    border-bottom-right-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.message-time {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.8);
+    /* 背景ブルーに対して見やすい白っぽい色 */
+    margin-bottom: 0.2rem;
+}
+
+/* Chat Input Area */
+.chat-input-area {
+    background: var(--color-bg-panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    position: sticky;
+    bottom: 0;
+}
+
+.chat-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-text-main);
+    padding: 0.75rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.chat-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-accent-primary);
+}
+
+.chat-send-btn {
+    background: var(--color-accent-primary);
+    color: white;
+    border: none;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.chat-send-btn:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Typing Indicator (AI Thinking) */
+.typing-dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.2rem 0.5rem;
+}
+
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    background-color: #a3a3a3; /* 落ち着いたグレー */
+    border-radius: 50%;
+    animation: typingWave 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes typingWave {
+    0%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-6px);
+    }
 }
