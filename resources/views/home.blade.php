@@ -61,26 +61,57 @@
             messagesContainer.appendChild(typingMsg);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // 3. AIからの返答をシミュレート（2.5秒後に返事が来る設定）
-            setTimeout(() => {
+            // 3. API経由でLLMに質問を送信
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ message: text })
+            })
+            .then(response => response.json())
+            .then(data => {
                 // 考え中のウェーブ（3つの点）を削除
                 messagesContainer.removeChild(typingMsg);
 
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'message ai-message';
+                
+                let replyText = 'エラーが発生しました。';
+                if (data.status === 'success') {
+                    replyText = data.reply.replace(/\n/g, '<br>');
+                } else if (data.message) {
+                    replyText = data.message;
+                }
+
                 aiMsg.innerHTML = `
                     <div class="message-avatar">🎬</div>
                     <div class="message-bubble">
-                        「${text}」ですね！<br>
-                        その気分なら『ホームアローン』が絶対におすすめです！最高に元気が出ますよ。
+                        ${replyText}
                     </div>
                 `;
                 messagesContainer.appendChild(aiMsg);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messagesContainer.removeChild(typingMsg);
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'message ai-message';
+                aiMsg.innerHTML = `
+                    <div class="message-avatar">🎬</div>
+                    <div class="message-bubble">
+                        通信エラーが発生しました。
+                    </div>
+                `;
+                messagesContainer.appendChild(aiMsg);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            })
+            .finally(() => {
                 // 4. アニメーション停止
                 filmLayout.classList.remove('is-loading');
-            }, 2500);
+            });
         });
 
         // Enterキーでも送信できるようにする
