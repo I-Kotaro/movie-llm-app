@@ -3,6 +3,52 @@
 @section('title', 'Movie AI - AI映画提案')
 
 @section('content')
+<style>
+    .movie-poster {
+        max-width: 150px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin: 10px 0;
+        display: block;
+    }
+    
+    .movie-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 10px;
+    }
+    .movie-card-header {
+        display: flex;
+        gap: 15px;
+    }
+    .movie-card-poster {
+        width: 80px;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+    .movie-card-title {
+        font-weight: 700;
+        font-size: 1.1em;
+        margin: 0 0 5px 0;
+        color: #fff;
+    }
+    .movie-card-meta {
+        font-size: 0.85em;
+        color: #ccc;
+        margin: 0 0 3px 0;
+    }
+    .movie-card-overview {
+        font-size: 0.9em;
+        line-height: 1.4;
+        color: #ddd;
+    }
+</style>
+
 <div class="chat-container">
     <div class="chat-messages">
         <!-- AIからのメッセージ例 -->
@@ -31,15 +77,21 @@
         const messagesContainer = document.querySelector('.chat-messages');
         const filmLayout = document.querySelector('.film-layout'); // アニメーションを制御する親要素
 
+        // 会話履歴を保持する配列
+        let chatHistory = [];
+
         sendBtn.addEventListener('click', () => {
             const text = chatInput.value.trim();
             if (!text) return;
 
-            // 1. ユーザーのメッセージを画面に追加
+            // 1. ユーザーのメッセージを画面と履歴に追加
             const userMsg = document.createElement('div');
             userMsg.className = 'message user-message';
             userMsg.innerHTML = `<div class="message-bubble">${text}</div>`;
             messagesContainer.appendChild(userMsg);
+            
+            // 履歴に追加
+            chatHistory.push({ role: 'user', content: text });
 
             // 入力欄をクリアして一番下までスクロール
             chatInput.value = '';
@@ -61,14 +113,17 @@
             messagesContainer.appendChild(typingMsg);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-            // 3. API経由でLLMに質問を送信
+            // 3. API経由で履歴と一緒にLLMに質問を送信
             fetch('/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                 },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({ 
+                    message: text,
+                    history: chatHistory // 履歴も送信する
+                })
             })
             .then(response => response.json())
             .then(data => {
@@ -81,6 +136,41 @@
                 let replyText = 'エラーが発生しました。';
                 if (data.status === 'success') {
                     replyText = data.reply.replace(/\n/g, '<br>');
+                    // AIの返答も履歴に追加
+                    chatHistory.push({ role: 'assistant', content: data.reply });
+
+                    // チャット欄の中に直接カードを描画
+                    if (data.movies && data.movies.length > 0) {
+                        let cardsHtml = '<div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">';
+                        data.movies.forEach(movie => {
+                            const posterHtml = movie.poster_url 
+                                ? `<img src="${movie.poster_url}" alt="${movie.title}" class="movie-card-poster">`
+                                : `<div class="movie-card-poster" style="background:#444;display:flex;align-items:center;justify-content:center;font-size:0.8em;text-align:center;">NO IMAGE</div>`;
+                            
+                            const releaseDate = movie.release_date !== '不明' ? movie.release_date : '公開日不明';
+                            const cast = movie.cast ? movie.cast : '不明';
+
+                            cardsHtml += `
+                                <div class="movie-card">
+                                    <div class="movie-card-header">
+                                        ${posterHtml}
+                                        <div>
+                                            <h3 class="movie-card-title">${movie.title}</h3>
+                                            <p class="movie-card-meta">📅 ${releaseDate}</p>
+                                            <p class="movie-card-meta">⭐ ${movie.vote_average}</p>
+                                            <p class="movie-card-meta">👥 ${cast}</p>
+                                        </div>
+                                    </div>
+                                    <div class="movie-card-overview">
+                                        ${movie.overview.length > 100 ? movie.overview.substring(0, 100) + '...' : movie.overview}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        cardsHtml += '</div>';
+                        replyText += cardsHtml;
+                    }
+
                 } else if (data.message) {
                     replyText = data.message;
                 }
