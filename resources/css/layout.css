@@ -1,0 +1,278 @@
+/* -------------------------------------
+   Sidebar & Overlay
+-------------------------------------- */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.app-sidebar {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 300px;
+    height: 100vh;
+    background-color: var(--color-sidebar-bg);
+    z-index: 101;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.app-sidebar.open {
+    transform: translateX(300px);
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-input-border);
+}
+
+.sidebar-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: var(--color-text-main);
+}
+
+.sidebar-content {
+    padding: 1.5rem;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.sidebar-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: var(--color-card-bg);
+    border: 1px solid var(--color-input-border);
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* Icon Buttons (Hamburger, Close) */
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.icon-btn:hover {
+    background-color: var(--color-card-hover);
+}
+
+/* App Layout */
+.film-layout {
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--color-bg-base);
+    transition: background-color 0.3s ease;
+}
+
+/* -------------------------------------
+   Film Edges
+-------------------------------------- */
+.film-layout::before,
+.film-layout::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    background-color: var(--color-film-base);
+    background-image: linear-gradient(to bottom, var(--color-film-hole) 12px, transparent 12px);
+    background-position: center top;
+    background-size: 10px 32px;
+    background-repeat: repeat-y;
+    z-index: 10;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+    animation: holeScroll 0.3s linear infinite;
+    animation-play-state: paused;
+    transition: background-color 0.3s ease;
+}
+
+[data-theme="dark"] .film-layout::before,
+[data-theme="dark"] .film-layout::after {
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.film-layout::before {
+    left: 0;
+    border-right: 1px solid var(--color-input-border);
+}
+
+.film-layout::after {
+    right: 0;
+    border-left: 1px solid var(--color-input-border);
+}
+
+.is-loading::before,
+.is-loading::after {
+    animation-play-state: running;
+}
+
+@keyframes holeScroll {
+    from {
+        background-position: center 0;
+    }
+
+    to {
+        background-position: center 96px;
+    }
+}
+
+.app-container {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background-color: transparent;
+    z-index: 5;
+    padding: 0 2.5rem;
+    /* フィルムの幅(24px)以上の余白を持たせ、画面端に張り付かないようにする */
+}
+
+/* Header */
+.glass-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1.5rem 2.5rem 4rem 2.5rem;
+    /* 下部にグラデーション用の余白を持たせる */
+    background: rgba(15, 23, 42, 0.8);
+    /* ダークモード用背景 */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+    border-bottom: none;
+}
+
+[data-theme="light"] .glass-header {
+    background: rgba(248, 250, 252, 0.8);
+    border-bottom: none;
+}
+
+.glass-header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    /* max-width制限を外し、画面全体の幅を使う（ただし親のpaddingで端から離れる） */
+    max-width: none;
+}
+
+.logo {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 15px var(--color-accent-glow);
+    text-align: center;
+    flex: 1;
+}
+
+/* Animation state for logo */
+.is-loading .logo {
+    animation: pulseText 2s infinite;
+}
+
+@keyframes pulseText {
+
+    0%,
+    100% {
+        opacity: 1;
+        text-shadow: 0 0 15px var(--color-accent-glow);
+    }
+
+    50% {
+        opacity: 0.5;
+        text-shadow: 0 0 5px transparent;
+    }
+}
+
+/* Theme Toggle Switch */
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--color-input-border);
+    /* ライトモード時(OFF時)の色 */
+    transition: .3s;
+    border-radius: 26px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input:checked+.slider {
+    background-color: var(--color-accent-primary);
+    /* ダークモード時(ON時)の色 */
+}
+
+input:checked+.slider:before {
+    transform: translateX(22px);
+}

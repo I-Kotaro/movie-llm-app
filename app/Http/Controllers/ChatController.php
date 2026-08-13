@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\MovieLlmService;
 use App\Services\TmdbService;
+use App\Services\GeminiLlmService;
+use App\Services\MovieLlmService;
 use Illuminate\Http\Request;
 
 class ChatController extends Controller
 {
-    protected MovieLlmService $movieLlmService;
-    protected TmdbService $tmdbService;
+    protected $tmdbService;
+    protected $llmService;
+    protected $fallbackLlmService;
 
-    public function __construct(MovieLlmService $movieLlmService, TmdbService $tmdbService)
+    public function __construct(TmdbService $tmdbService, GeminiLlmService $llmService, MovieLlmService $fallbackLlmService)
     {
-        $this->movieLlmService = $movieLlmService;
         $this->tmdbService = $tmdbService;
+        $this->llmService = $llmService;
+        $this->fallbackLlmService = $fallbackLlmService;
     }
 
     public function ask(Request $request)
@@ -31,62 +34,140 @@ class ChatController extends Controller
         \Log::info('ユーザーからのリクエストを受け付けました: ' . $userMessage);
 
         try {
-            // 1. LLMにユーザーの入力から最適な映画タイトルを複数推測させる
-            $suggestedTitles = $this->movieLlmService->extractSearchQuery($userMessage, $history);
-            \Log::info('LLMが推測した映画タイトル: ' . $suggestedTitles);
-
-            // 映画と関係ない質問の場合は、検索せずにすぐに返す
-            if (trim($suggestedTitles) === 'NO_MOVIE_QUERY') {
-                $finalPrompt = "ユーザーの発言: 「{$userMessage}」\n\nあなたは映画コンシェルジュです。ユーザーから映画に全く関係のない発言（天気、挨拶、雑談など）が来ました。優しく丁寧に、自分は映画についての質問にしか答えられない旨を伝えて、映画の話題に誘導してください。";
-                $response = $this->movieLlmService->ask($finalPrompt, $history);
+            // 1. ユーザーのプロンプトから検索戦略（モード）とパラメータを抽出する
+            $searchStrategyJson = $this->executeWithCascadingFallback(
+                function ($model) use ($userMessage, $history) {
+                    return $this->llmService->extractSearchQuery($userMessage, $history, $model);
+                },
+                function () use ($userMessage, $history) {
+                    return $this->fallbackLlmService->extractSearchQuery($userMessage, $history, 'llama-3.3-70b-versatile');
+                }
+            );
+            \Log::info('LLM Search Strategy: ' . $searchStrategyJson);
+            
+            // JSONを配列にデコード
+            $strategy = json_decode($searchStrategyJson, true);
+            
+            if (empty($strategy) || empty($strategy['mode'])) {
+                error_log("[SEARCH MODE] モード判定失敗、または映画に関する質問ではありませんでした。");
                 return response()->json([
                     'status' => 'success',
-                    'reply' => $response,
+                    'reply' => '申し訳ありません、映画に関するご質問ではないようですね。映画のおすすめについてお気軽にお尋ねください！',
                     'movies' => []
                 ]);
             }
 
-            // 2. 推測された各タイトルでTMDbを検索する
             $tmdbResults = [];
-            $titles = explode(',', $suggestedTitles);
-            foreach (array_slice($titles, 0, 3) as $title) {
-                $title = trim($title);
-                if (!empty($title)) {
-                    $results = $this->tmdbService->searchMovies($title, 2); // 複数ヒットするように2件取得
-                    if (!empty($results)) {
-                        $tmdbResults = array_merge($tmdbResults, $results);
+
+            // 2. モードに応じて検索を実行する
+            if ($strategy['mode'] === 'title' && !empty($strategy['titles'])) {
+                error_log("\n=======================================================");
+                error_log("[SEARCH MODE] 🎯 Titleモード (ピンポイント検索) を使用します");
+                error_log("[EXTRACTED TITLES] " . implode(", ", $strategy['titles']));
+                error_log("=======================================================\n");
+
+                // Titleモード: AIが推測したタイトルで検索
+                // ランダム性を出すためにシャッフルする
+                shuffle($strategy['titles']);
+                
+                foreach ($strategy['titles'] as $title) {
+                    if (count($tmdbResults) >= 3) break;
+                    
+                    $title = trim($title);
+                    if (!empty($title)) {
+                        $results = $this->tmdbService->searchMovies($title, 1);
+                        if (!empty($results)) {
+                            $tmdbResults = array_merge($tmdbResults, $results);
+                            $tmdbResults = array_unique($tmdbResults, SORT_REGULAR);
+                            $tmdbResults = array_slice($tmdbResults, 0, 3);
+                        }
                     }
                 }
+            } else if ($strategy['mode'] === 'discover' && !empty($strategy['discover_params'])) {
+                error_log("\n=======================================================");
+                error_log("[SEARCH MODE] 🌍 Discoverモード (データベース検索) を使用します");
+                error_log("[EXTRACTED PARAMS] " . json_encode($strategy['discover_params'], JSON_UNESCAPED_UNICODE));
+                error_log("=======================================================\n");
+
+                // Discoverモード: TMDBのパラメータ検索
+                $tmdbResults = $this->tmdbService->discoverMovies($strategy['discover_params'], 3);
             }
-            
-            // 重複を排除し、最大5件に制限（LLMのトークン節約のため）
-            $tmdbResults = array_unique($tmdbResults, SORT_REGULAR);
-            $tmdbResults = array_slice($tmdbResults, 0, 5);
 
             // 3. TMDbの検索結果をプロンプトに埋め込んで、LLMに最終回答を作らせる
             $context = empty($tmdbResults) ? "（関連する映画データは見つかりませんでした）" : json_encode($tmdbResults, JSON_UNESCAPED_UNICODE);
             
             $finalPrompt = "ユーザーの要望: 「{$userMessage}」\n\n";
-            $finalPrompt .= "以下の【実在する映画データ】のみを参考に、ユーザーの要望に沿っておすすめの映画を提案してください。\n";
+            $finalPrompt .= "以下の【実在する映画データ】をベースに、ユーザーの要望に沿っておすすめの映画を提案してください。\n";
             $finalPrompt .= "【実在する映画データ】\n{$context}\n\n";
             $finalPrompt .= "※注意事項：\n";
             $finalPrompt .= "1. 上記の映画データが空の場合や、要望に合わない場合は「申し訳ありません、お探し条件にぴったり合う映画が見つかりませんでした。別の条件で探してみましょうか？」のように、自然で丁寧なコンシェルジュとして返答してください。\n";
-            $finalPrompt .= "2. 決して自分で実在しない映画を作ったり、嘘のあらすじを語ったりしないでください。\n";
-            $finalPrompt .= "3. 映画のあらすじやシーンについて、上記の【実在する映画データ】に記載されていない内容を勝手に想像して捏造しないでください。記載されている事実のみに基づいておすすめの理由を説明してください。\n";
-            $finalPrompt .= "4. 可能な限り複数の映画（最大3つ）を提案してください。\n";
+            $finalPrompt .= "2. 決して自分で実在しない映画を作ったり、存在しない架空のあらすじを捏造して語ったりしないでください。\n";
+            $finalPrompt .= "3. 出力は必ず以下のJSON形式のみとし、その他のテキストは一切含めないでください。\n";
+            $finalPrompt .= "{\n";
+            $finalPrompt .= "  \"general_reply\": \"ユーザーへの全体的な挨拶や締めの言葉（例: こちらがおすすめです！）\"\n";
+            $finalPrompt .= "}\n";
 
-            $response = $this->movieLlmService->ask($finalPrompt, $history);
+            $response = $this->executeWithCascadingFallback(
+                function ($model) use ($finalPrompt, $history) {
+                    return $this->llmService->ask($finalPrompt, $history, $model, true);
+                },
+                function () use ($finalPrompt, $history) {
+                    return $this->fallbackLlmService->ask($finalPrompt, $history, 'llama-3.1-8b-instant', true);
+                }
+            );
+            // LLMのレスポンスからJSON部分のみを抽出する（マークダウン等が含まれている対策）
+            $jsonString = $response;
+            if (preg_match('/\{.*\}/s', $response, $matches)) {
+                $jsonString = $matches[0];
+            }
+            $responseData = json_decode($jsonString, true) ?? [];
+            
+            // 取得したおすすめコメントをTMDBのデータにマージする処理は削除しました
+
             return response()->json([
                 'status' => 'success',
-                'reply' => $response,
+                'reply' => $responseData['general_reply'] ?? 'おすすめの映画はこちらです！',
                 'movies' => $tmdbResults
             ]);
         } catch (\Exception $e) {
-            \Log::error('LLM API Error: ' . $e->getMessage());
+            \Log::error('ChatController Error: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => '申し訳ありません。現在AIがお返事できない状態です。'
+                'message' => '申し訳ありません、現在システムが混み合っております。少し時間をおいてから再度お試しください。'
             ], 500);
         }
+    }
+
+    /**
+     * 指定された順番でGeminiモデルを試し、全て失敗した場合はGroqにフォールバックする
+     */
+    private function executeWithCascadingFallback(callable $geminiAction, callable $groqAction)
+    {
+        $geminiModels = [
+            'gemini-2.0-flash-lite',
+            'gemini-2.5-flash-lite',
+            'gemini-3.1-flash-lite',
+            'gemini-3.5-flash-lite',
+            'gemini-2.0-flash',
+            'gemini-2.5-flash',
+            'gemini-3.0-flash',
+            'gemini-3.5-flash',
+            'gemini-3.6-flash'
+        ];
+
+        foreach ($geminiModels as $model) {
+            try {
+                $result = $geminiAction($model);
+                error_log("[LLM MODEL] ✅ 成功: {$model} を使用しました");
+                return $result;
+            } catch (\Exception $e) {
+                error_log("[LLM MODEL] ⚠️ 失敗: {$model} -> 次のモデルへ切り替えます");
+                // 次のモデルへ
+                continue;
+            }
+        }
+
+        error_log("[LLM MODEL] 🚨 全Geminiモデル失敗 -> 最後の砦 Groq (Llama 3) を使用します");
+        return $groqAction();
     }
 }
