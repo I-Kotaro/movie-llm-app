@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'groq' => [
+        'key' => env('GROQ_API_KEY'),
+    ],
+
+    'tmdb' => [
+        'key' => env('TMDB_API_KEY'),
+    ],
+
 ];

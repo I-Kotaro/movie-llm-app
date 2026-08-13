@@ -1,0 +1,60 @@
+/* Glassmorphism Movie Cards */
+.movie-card {
+    background: var(--color-card-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-card-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 12px var(--color-card-shadow);
+}
+
+.movie-card:hover {
+    background: var(--color-card-hover);
+    transform: translateY(-2px);
+}
+
+.movie-card-header {
+    display: flex;
+    gap: 1.25rem;
+}
+
+.movie-card-poster {
+    width: 90px;
+    flex-shrink: 0;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px var(--color-card-shadow);
+}
+
+.movie-card-title {
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--color-text-main);
+    font-family: var(--font-display);
+}
+
+.movie-card-meta {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.movie-card-overview {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-text-main);
+    background: var(--color-card-overview-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--color-card-border);
+    transition: background 0.3s ease;
+}
