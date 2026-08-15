@@ -8,16 +8,20 @@
     }
 
     .glass-header {
-        padding: 0.5rem 26px 4rem 26px;
+        padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 26px 3.5rem 26px;
+    }
+
+    .logo {
+        font-size: 1.2rem;
     }
 
     .chat-messages {
-        padding: 7.5rem 0.5rem 8rem 0.5rem;
+        padding: calc(6rem + env(safe-area-inset-top, 0px)) 0.5rem calc(7.5rem + env(safe-area-inset-bottom, 0px)) 0.5rem;
     }
 
     .chat-input-area {
         width: calc(100vw - 1.5rem);
-        bottom: 1rem;
+        bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     }
 
     .movie-card-header {
