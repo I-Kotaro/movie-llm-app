@@ -10,40 +10,56 @@ RUN npm run build
 FROM composer:2 AS composer
 WORKDIR /app
 COPY composer*.json ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignore-platform-reqs
 COPY . .
-RUN composer dump-autoload --optimize --no-dev
+RUN composer dump-autoload --optimize --no-dev --ignore-platform-reqs
 
-# 3. 本番実行ステージ (FrankenPHP)
-FROM dunglas/frankenphp:1-php8.3-alpine
+# 3. 本番実行ステージ (PHP 8.4-FPM + Nginx + Alpine)
+FROM php:8.4-fpm-alpine
 
-# 必要なPHP拡張をインストール
-RUN install-php-extensions \
-    pcntl \
+# 必要なパッケージとPHP拡張をインストール
+RUN apk add --no-cache \
+    nginx \
+    supervisor \
+    curl \
+    libzip-dev \
+    icu-dev \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    oniguruma-dev \
+    linux-headers \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+    pdo_mysql \
+    zip \
     bcmath \
     intl \
     opcache \
-    zip \
-    pdo_mysql
+    gd \
+    pcntl
 
-ENV SERVER_NAME="http://"
-ENV APP_ENV="production"
-ENV APP_DEBUG="false"
+WORKDIR /var/www/html
 
-WORKDIR /app
-
-# アプリケーションコードとビルド済みアセットを配置
+# ソースコードと成果物のコピー
 COPY . .
 COPY --from=composer /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
 
-# 設定ファイル・起動スクリプトのコピー
-COPY ./docker/Caddyfile /etc/caddy/Caddyfile
+# Nginx, Supervisor, Entrypoint設定の配置
+COPY ./docker/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/supervisord.conf /etc/supervisord.conf
 COPY ./docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-# パーミッション設定
-RUN chmod -R 777 storage bootstrap/cache
+# 権限設定
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# 不要な設定ファイルの削除
+RUN rm -f ./docker/Caddyfile
+
+EXPOSE 80
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
