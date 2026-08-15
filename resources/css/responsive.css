@@ -20,13 +20,12 @@
     }
 
     .chat-messages {
-        padding: calc(6rem + env(safe-area-inset-top, 0px)) 0.5rem 8rem 0.5rem;
+        padding: calc(6rem + env(safe-area-inset-top, 0px)) 0.5rem calc(6rem + env(safe-area-inset-bottom, 20px)) 0.5rem;
     }
 
     .chat-input-area {
         width: calc(100vw - 1.5rem);
-        /* Safariでdvhとsafe-areaが二重適用されて浮くのを防ぐため、固定値の余白にする */
-        bottom: 0.5rem;
+        bottom: calc(0.5rem + env(safe-area-inset-bottom, 10px));
     }
 
     .movie-card-header {

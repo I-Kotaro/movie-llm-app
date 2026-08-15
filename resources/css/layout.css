@@ -92,8 +92,7 @@
 .film-layout {
     display: flex;
     justify-content: center;
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
     overflow: hidden;
     position: relative;
     background-color: var(--color-bg-base);
