@@ -106,7 +106,7 @@ class ChatController extends Controller
             $finalPrompt .= "4. 出力は必ず以下のJSON形式のみとし、その他のテキストは一切含めないでください。\n";
             $finalPrompt .= "5. general_replyは、映画データに登場する最も評価の高い作品について軽く触れる、映画鑑賞を促す言葉など、正しい日本語でバリエーション豊かにしてください。必ずしも全ての作品に言及する必要はありませんが、選定理由と関連性を持たせてください。\n";
             $finalPrompt .= "{\n";
-            $finalPrompt .= "  \"general_reply\": \"ユーザーへの全体的な挨拶や締めの言葉（例: こちらがおすすめです！）\"\n";
+            $finalPrompt .= "  \"general_reply\": \"ユーザーへの全体的な挨拶や提案の言葉（※毎回異なる気の利いた文章を出力してください）\"\n";
             $finalPrompt .= "}\n";
 
             $response = $this->executeWithCascadingFallback(
