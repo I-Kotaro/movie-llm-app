@@ -1,6 +1,15 @@
-* {
+html, body {
     margin: 0;
     padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* スマホでのバウンド（ラバーバンド効果）や意図しないスクロールを完全に防ぐ */
+    overscroll-behavior: none;
+    position: fixed;
+}
+
+* {
     box-sizing: border-box;
 }
 
@@ -9,7 +18,5 @@ body {
     color: var(--color-text-main);
     font-family: var(--font-sans);
     line-height: 1.6;
-    height: 100vh;
-    overflow: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
