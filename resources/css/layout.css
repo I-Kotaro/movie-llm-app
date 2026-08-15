@@ -92,7 +92,11 @@
 .film-layout {
     display: flex;
     justify-content: center;
-    height: 100%;
+    /* 背景やフィルムの端をアドレスバー裏（画面の物理的な底）まで完全に届かせる */
+    height: 100vh;
+    /* コンテンツ部分だけはアドレスバーとホームインジケーターの両方を確実に避ける究極のハック */
+    padding-bottom: max(calc(100vh - 100dvh), env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     overflow: hidden;
     position: relative;
     background-color: var(--color-bg-base);
