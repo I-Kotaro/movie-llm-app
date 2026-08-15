@@ -8,7 +8,11 @@
     }
 
     .glass-header {
-        padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 26px 3.5rem 26px;
+        /* maxを使ってセーフエリアと最小余白の大きい方を適用 */
+        padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+        padding-bottom: 1rem;
+        padding-left: 26px;
+        padding-right: 26px;
     }
 
     .logo {

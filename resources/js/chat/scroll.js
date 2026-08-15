@@ -10,7 +10,7 @@ export function initScroll(scrollContainer, scrollToBottomBtn, messagesContainer
         const containerScrollHeight = scrollContainer === window ? document.documentElement.scrollHeight : scrollContainer.scrollHeight;
         const containerScrollTop = scrollContainer === window ? window.scrollY : scrollContainer.scrollTop;
         const containerClientHeight = scrollContainer === window ? window.innerHeight : scrollContainer.clientHeight;
-        
+
         // ボトムから100px以上離れているか判定
         const isScrolledUp = containerScrollHeight - containerScrollTop - containerClientHeight > 100;
         if (isScrolledUp) {
@@ -23,20 +23,6 @@ export function initScroll(scrollContainer, scrollToBottomBtn, messagesContainer
                     scrollToBottomBtn.style.display = 'none';
                 }
             }, 300);
-        }
-
-        // ヘッダーの表示・非表示切り替え（上スクロールで非表示、下/ボトムスクロールで表示）
-        if (header) {
-            const scrollDiff = containerScrollTop - lastScrollTop;
-            
-            // 下（ボトム方向）へスクロール中、または一番下（最新）にいる場合：ヘッダーを表示
-            if (scrollDiff > scrollThreshold || !isScrolledUp) {
-                header.classList.remove('header-hidden');
-            } 
-            // 上（過去ログ方向）へスクロール中：ヘッダーを非表示
-            else if (scrollDiff < -scrollThreshold) {
-                header.classList.add('header-hidden');
-            }
         }
 
         lastScrollTop = containerScrollTop <= 0 ? 0 : containerScrollTop;

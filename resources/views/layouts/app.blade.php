@@ -17,7 +17,7 @@
     <!-- テーマ初期化スクリプト (チラつき防止) -->
     <script>
         (function() {
-            const savedTheme = localStorage.getItem('app-theme') || 'dark';
+            const savedTheme = localStorage.getItem('app-theme') || 'light';
             document.documentElement.setAttribute('data-theme', savedTheme);
         })();
     </script>

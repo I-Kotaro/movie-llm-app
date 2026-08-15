@@ -174,12 +174,11 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 1.5rem 2.5rem 4rem 2.5rem;
-    /* 下部にグラデーション用の余白を持たせる */
+    padding: max(1.5rem, env(safe-area-inset-top, 1.5rem)) 2.5rem 1.5rem 2.5rem;
+    /* 下部にグラデーション用の余白を持たせる（減らした） */
     background: rgba(15, 23, 42, 0.8);
     /* ダークモード用背景 */
     backdrop-filter: blur(12px);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
 }
 
 .glass-header.header-hidden {
