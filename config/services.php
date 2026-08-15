@@ -39,6 +39,10 @@ return [
         'key' => env('GROQ_API_KEY'),
     ],
 
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+    ],
+
     'tmdb' => [
         'key' => env('TMDB_API_KEY'),
     ],
