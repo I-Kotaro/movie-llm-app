@@ -11,30 +11,34 @@ class MovieLlmService
 
     public function __construct()
     {
-        $this->apiKey = config('services.groq.key');
+        $this->apiKey = (string) config('services.groq.key', env('GROQ_API_KEY', ''));
     }
 
     /**
      * 映画についての質問をLLMに送信し、回答を取得します。
      *
      * @param string $prompt ユーザーからのプロンプトや質問
-     * @param array $history 過去の会話履歴 [['role' => '...', 'content' => '...'], ...]
-     * @param string $model 使用するモデル (デフォルト: llama-3.1-8b-instant)
+     * @param array $history 過去の会話履歴
+     * @param string $model 使用するモデル
+     * @param bool $isJson JSONモードで出力するかどうか
      * @return string LLMからの返答
      */
-    public function ask(string $prompt, array $history = [], string $model = 'llama-3.1-8b-instant'): string
+    public function ask(string $prompt, array $history = [], string $model = 'llama-3.3-70b-versatile', bool $isJson = false): string
     {
+        if (empty($this->apiKey)) {
+            throw new \Exception('GROQ_API_KEY is not set.');
+        }
+
         $messages = [
             [
                 'role' => 'system',
-                'content' => 'あなたはユーザーの要望に沿った映画を提案する優秀なコンシェルジュです。映画に関する質問に対して、簡潔で魅力的な日本語を使って敬語で答えてください。',
+                'content' => 'あなたはユーザーの要望に沿った映画を提案する優秀な映画専門コンシェルジュです。映画に関する質問に対して、簡潔で魅力的な正しい日本語を使って敬語で答えてください。天気、ニュース、プログラミング、一般的な雑談など、映画検索や提案に直接関係のない質問には絶対に答えないでください。「私は映画専門のコンシェルジュですので、映画についてお尋ねください」と返答してください。',
             ]
         ];
 
-        // 過去の履歴を追加 (直近5往復程度までに制限してトークンを節約)
+        // 過去の履歴を追加
         $recentHistory = array_slice($history, -10);
         foreach ($recentHistory as $msg) {
-            // 今回のプロンプトと同じ内容のuserメッセージ（末尾）は重複になるので除外
             if ($msg['role'] === 'user' && $msg['content'] === $prompt) {
                 continue;
             }
@@ -50,15 +54,22 @@ class MovieLlmService
             'content' => $prompt,
         ];
 
+        $payload = [
+            'model' => $model,
+            'messages' => $messages,
+            'temperature' => 0.7,
+        ];
+
+        if ($isJson) {
+            $payload['response_format'] = ['type' => 'json_object'];
+        }
+
         $response = Http::withToken($this->apiKey)
             ->timeout(30)
-            ->post("{$this->baseUrl}/chat/completions", [
-                'model' => $model,
-                'messages' => $messages,
-                'temperature' => 0.7,
-            ]);
+            ->post("{$this->baseUrl}/chat/completions", $payload);
 
         if ($response->failed()) {
+            \Log::error('Groq API Error (ask): ' . $response->body());
             throw new \Exception('LLM API request failed: ' . $response->body());
         }
 
@@ -66,24 +77,47 @@ class MovieLlmService
     }
 
     /**
-     * ユーザーのプロンプトから要望に合う映画のタイトルを抽出（推測）します。
+     * ユーザーのプロンプトから検索モードとパラメータをJSONで抽出します。
      *
      * @param string $prompt
      * @param array $history
      * @param string $model
-     * @return string
+     * @return string JSON文字列
      */
-    public function extractSearchQuery(string $prompt, array $history = [], string $model = 'llama-3.1-8b-instant'): string
+    public function extractSearchQuery(string $prompt, array $history = [], string $model = 'llama-3.3-70b-versatile'): string
     {
+        if (empty($this->apiKey)) {
+            throw new \Exception('GROQ_API_KEY is not set.');
+        }
+
+        $currentDate = now()->format('Y');
+
+        $systemInstruction = "あなたは最適な映画検索戦略を決定するアシスタントです。ユーザーの要望を分析し、以下のJSON形式のみを出力してください。\n"
+            . "現在の年は {$currentDate} 年です。\n\n"
+            . "【検索モードの判定基準】\n"
+            . "- 'title'モード: 「古代ローマ人が風呂に入る」「ドンデン返しがある」「泣ける」「アクション映画」など、具体的なストーリー、設定、感情による検索の場合はこちらを選び、該当する映画のタイトルを推測してください。\n"
+            . "- 'discover'モード: 「最新のアニメ」「2020年代のコメディ」など、公開年や明確なジャンルのみで絞り込める場合はこちらを選んでください。\n\n"
+            . "【利用可能なジャンルID (discoverモード用)】\n"
+            . "アクション:28, アドベンチャー:12, アニメ:16, コメディ:35, クライム:80, ドキュメンタリー:99, ドラマ:18, ファミリー:10751, ファンタジー:14, 歴史:36, ホラー:27, 音楽:10402, ミステリー:9648, ロマンス:10749, SF:878, スリラー:53, 戦争:10752, 西部劇:37\n\n"
+            . "【出力JSONフォーマット】\n"
+            . "{\n"
+            . "  \"mode\": \"'title' または 'discover'\",\n"
+            . "  \"titles\": [\"タイトル1\", \"タイトル2\", ...], // modeが'title'の場合のみ必須。合致する映画を10個以上リストアップ\n"
+            . "  \"discover_params\": {\n"
+            . "    \"with_genres\": \"抽出したジャンルID（複数ある場合はカンマ区切り）\",\n"
+            . "    \"primary_release_year\": \"年（数値）またはnull\"\n"
+            . "  }\n"
+            . "}\n\n"
+            . "※映画と無関係な場合は、空のJSON `{}` を出力してください。";
+
         $messages = [
             [
                 'role' => 'system',
-                'content' => 'あなたは映画データベース検索AIです。ユーザーの要望に最も合致する「実在する有名な映画のタイトル」を最大3つ、カンマ区切りで出力してください。会話文や余計な記号は一切含めないでください。例：「トイ・ストーリー, レゴ・ムービー, シュガー・ラッシュ」',
+                'content' => $systemInstruction,
             ]
         ];
 
-        // 過去の履歴を少しだけ追加して文脈を理解させる
-        $recentHistory = array_slice($history, -6);
+        $recentHistory = array_slice($history, -4);
         foreach ($recentHistory as $msg) {
             if ($msg['role'] === 'user' && $msg['content'] === $prompt) {
                 continue;
@@ -96,7 +130,7 @@ class MovieLlmService
 
         $messages[] = [
             'role' => 'user',
-            'content' => $prompt . "\n\n【重要指令】\n1. 上記までの会話の文脈を踏まえて、ユーザーが知りたい映画の「タイトル」または「俳優名・監督名」のみをカンマ区切りで出力してください。あらすじや説明、会話文は絶対に書かないでください。\n2. もしユーザーの発言が「映画を探すこと」に全く関係ない場合（例：天気を聞く、日常の挨拶など）は、無理に映画を推測せず、必ず「NO_MOVIE_QUERY」という文字列のみを出力してください。\n3. 人物名が入力された場合は、勝手に映画タイトルに変換せず、そのまま人物名を出力してください。",
+            'content' => $prompt,
         ];
 
         $response = Http::withToken($this->apiKey)
@@ -105,10 +139,12 @@ class MovieLlmService
                 'model' => $model,
                 'messages' => $messages,
                 'temperature' => 0.3,
+                'response_format' => ['type' => 'json_object'],
             ]);
 
         if ($response->failed()) {
-            return '';
+            \Log::error('Groq API Error (extractSearchQuery): ' . $response->body());
+            throw new \Exception('Groq API request failed: ' . $response->body());
         }
 
         return trim($response->json('choices.0.message.content', ''));

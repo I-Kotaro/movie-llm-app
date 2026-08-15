@@ -11,26 +11,22 @@ class GeminiLlmService
 
     public function __construct()
     {
-        $this->apiKey = env('GEMINI_API_KEY', '');
+        $this->apiKey = (string) config('services.gemini.key', env('GEMINI_API_KEY', ''));
         $this->baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
     }
 
     /**
      * 映画についての質問をLLMに送信し、回答を取得します。
      */
-    public function ask(string $prompt, array $history = [], string $model = 'gemini-3.5-flash', bool $isJson = false): string
+    public function ask(string $prompt, array $history = [], string $model = 'gemini-2.0-flash', bool $isJson = false): string
     {
         if (empty($this->apiKey)) {
-            \Log::warning('GEMINI_API_KEY is not set. Returning fallback message.');
-            return $isJson ? json_encode([
-                "general_reply" => "APIキーが設定されていません。.envにGEMINI_API_KEYを設定してください。",
-                "recommendations" => []
-            ]) : "APIキーが設定されていません。.envにGEMINI_API_KEYを設定してください。";
+            throw new \Exception('GEMINI_API_KEY is not set.');
         }
 
         $contents = $this->buildContents($prompt, $history);
         
-        $systemInstruction = "あなたはユーザーの要望に沿った映画を提案する優秀なコンシェルジュです。映画に関する質問に対して、簡潔で魅力的な正しい日本語を使って敬語で答えてください。";
+        $systemInstruction = "あなたはユーザーの要望に沿った映画を提案する優秀な映画専門コンシェルジュです。映画に関する質問に対して、簡潔で魅力的な正しい日本語を使って敬語で答えてください。天気、ニュース、プログラミング、一般的な雑談など、映画検索や提案に直接関係のない質問には絶対に答えないでください。「私は映画専門のコンシェルジュですので、映画についてお尋ねください」と返答してください。";
 
         $payload = [
             'systemInstruction' => [
@@ -61,11 +57,10 @@ class GeminiLlmService
     /**
      * ユーザーのプロンプトから検索モードとパラメータをJSONで抽出します。
      */
-    public function extractSearchQuery(string $prompt, array $history = [], string $model = 'gemini-3.5-flash'): string
+    public function extractSearchQuery(string $prompt, array $history = [], string $model = 'gemini-2.0-flash'): string
     {
         if (empty($this->apiKey)) {
-            \Log::warning('GEMINI_API_KEY is not set. Returning empty JSON.');
-            return '{}';
+            throw new \Exception('GEMINI_API_KEY is not set.');
         }
 
         // 過去の履歴を少しだけ含める（直近2件）
