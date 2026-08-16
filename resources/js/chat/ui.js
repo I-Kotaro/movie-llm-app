@@ -120,7 +120,6 @@ export function initChatUI() {
                     </div>
                 `;
                 messagesContainer.appendChild(aiMsg);
-                scrollToBottom(messagesContainer);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -137,7 +136,6 @@ export function initChatUI() {
                     </div>
                 `;
                 messagesContainer.appendChild(aiMsg);
-                scrollToBottom(messagesContainer);
             })
             .finally(() => {
                 // 4. アニメーション停止
