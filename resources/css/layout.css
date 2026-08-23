@@ -179,8 +179,7 @@
     align-items: flex-start;
     padding: max(1.5rem, env(safe-area-inset-top, 1.5rem)) 2.5rem 1.5rem 2.5rem;
     /* 下部にグラデーション用の余白を持たせる（減らした） */
-    background: rgba(15, 23, 42, 0.8);
-    /* ダークモード用背景 */
+    background: var(--color-bg-panel);
     backdrop-filter: blur(12px);
 }
 
@@ -188,11 +187,6 @@
     transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
-}
-
-[data-theme="light"] .glass-header {
-    background: rgba(248, 250, 252, 0.8);
-    border-bottom: none;
 }
 
 .glass-header-inner {

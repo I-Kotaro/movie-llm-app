@@ -1,39 +1,4 @@
 :root {
-    /* Color Palette - Default Dark (Navy Blue) */
-    --color-bg-base: #0f172a;
-    --color-bg-edge: #0b0f19;
-    --color-bg-panel: rgba(30, 41, 59, 0.75);
-    --color-sidebar-bg: #1e293b;
-    /* Sidebar color */
-    --color-text-main: #f8fafc;
-    --color-text-muted: #94a3b8;
-    --color-accent-primary: #3b82f6;
-    --color-accent-glow: rgba(59, 130, 246, 0.25);
-
-    --color-film-base: #111111;
-    --color-film-hole: #1e293b;
-
-    --color-msg-user-bg: var(--color-accent-primary);
-    --color-msg-user-text: #ffffff;
-    --color-msg-ai-bg: transparent;
-    --color-msg-avatar-bg: rgba(255, 255, 255, 0.1);
-
-    --color-input-bg: rgba(30, 41, 59, 0.75);
-    --color-input-border: rgba(255, 255, 255, 0.1);
-    --color-input-shadow: rgba(0, 0, 0, 0.5);
-
-    --color-card-bg: rgba(255, 255, 255, 0.04);
-    --color-card-hover: rgba(255, 255, 255, 0.08);
-    --color-card-border: rgba(255, 255, 255, 0.08);
-    --color-card-shadow: rgba(0, 0, 0, 0.4);
-    --color-card-overview-bg: rgba(0, 0, 0, 0.2);
-
-    /* Typography */
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-display: 'Outfit', sans-serif;
-}
-
-[data-theme="light"] {
     /* Color Palette - Light Theme */
     --color-bg-base: #f8fafc;
     /* Very light slate */
@@ -68,4 +33,39 @@
     --color-card-border: rgba(0, 0, 0, 0.05);
     --color-card-shadow: rgba(0, 0, 0, 0.05);
     --color-card-overview-bg: #f8fafc;
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, sans-serif;
+    --font-display: 'Outfit', sans-serif;
+}
+
+[data-theme="dark"] {
+    /* Color Palette - Default Dark (Navy Blue) */
+    --color-bg-base: #0f172a;
+    --color-bg-edge: #0b0f19;
+    --color-bg-panel: rgba(30, 41, 59, 0.75);
+    --color-sidebar-bg: #1e293b;
+    /* Sidebar color */
+    --color-text-main: #f8fafc;
+    --color-text-muted: #94a3b8;
+    --color-accent-primary: #3b82f6;
+    --color-accent-glow: rgba(59, 130, 246, 0.25);
+
+    --color-film-base: #111111;
+    --color-film-hole: #1e293b;
+
+    --color-msg-user-bg: var(--color-accent-primary);
+    --color-msg-user-text: #ffffff;
+    --color-msg-ai-bg: transparent;
+    --color-msg-avatar-bg: rgba(255, 255, 255, 0.1);
+
+    --color-input-bg: rgba(30, 41, 59, 0.75);
+    --color-input-border: rgba(255, 255, 255, 0.1);
+    --color-input-shadow: rgba(0, 0, 0, 0.5);
+
+    --color-card-bg: rgba(255, 255, 255, 0.04);
+    --color-card-hover: rgba(255, 255, 255, 0.08);
+    --color-card-border: rgba(255, 255, 255, 0.08);
+    --color-card-shadow: rgba(0, 0, 0, 0.4);
+    --color-card-overview-bg: rgba(0, 0, 0, 0.2);
 }
