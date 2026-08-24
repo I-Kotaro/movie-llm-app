@@ -57,8 +57,8 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
                     </button>
                     <div class="logo" style="display: flex; justify-content: center; align-items: center;">
-                        <a href="{{ url('/') }}" style="display: flex; align-items: center;">
-                            <img src="{{ asset('images/logo.png') }}" alt="映画コンシェルジュ" style="height: 45px; width: auto;">
+                        <a href="{{ url('/') }}" style="display: flex; align-items: center; max-width: 100%;">
+                            <img src="{{ asset('images/logo.png') }}" alt="映画コンシェルジュ" style="height: 45px; max-width: 100%; width: auto; object-fit: contain;">
                         </a>
                     </div>
                     <div style="width: 40px;"></div> <!-- レイアウトのバランス調整用 (左のボタンと幅を合わせる) -->
